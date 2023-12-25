@@ -1,0 +1,46 @@
+.homebanner {
+	
+	color:#ffffff;
+	text-align: center;
+	width: 100%;
+}
+.homebanner-overlay {
+    background-image: url("https://tactustherapy.com/wp-content/uploads/2019/07/eye-visual-scanning-e1565287684903-1024x576.jpg");
+	background-repeat: no-repeat;
+    padding:220px 0px 170px;
+    background-size: cover;
+    background-position: center;
+}
+.homebanner h1 {
+	color:#ffffff;
+}
+.homebanner p {
+	margin:15px auto 15px;
+	max-width: 670px;
+    font-size: 20px;
+}
+.homebanner-btn {
+	background: #ab2f52;
+	padding: 12px 45px;
+	font-size: 15px;
+	border-radius: 30px;
+	margin-top: 30px;
+    color: white;
+}
+.homebanner-btn:hover {
+	background: #ffffff;
+	color:#ab2f52;
+}
+@media all and (max-width:768px) {
+
+    .homebanner h1 {
+        font-size: 30px;
+    }
+    .homebanner p{
+        font-size: 18px;
+    }
+    .homebanner-overlay{
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}

@@ -1,0 +1,275 @@
+import { filter } from 'lodash';
+import { Icon } from '@iconify/react';
+import { sentenceCase } from 'change-case';
+import { useState, useEffect } from 'react';
+import {fetchGuardians, dispatchGetGuardians} from '../redux/actions/guardiansAction'
+import { useDispatch, useSelector } from 'react-redux'
+import plusFill from '@iconify/icons-eva/plus-fill';
+import { Link as RouterLink } from 'react-router-dom';
+// material
+import {
+  Card,
+  Table,
+  Stack,
+  Avatar,
+  Button,
+  Checkbox,
+  TableRow,
+  TableBody,
+  TableCell,
+  Container,
+  Typography,
+  TableContainer,
+  TablePagination
+} from '@mui/material';
+// components
+import Page from '../components/Page';
+import Label from '../components/Label';
+import Scrollbar from '../components/Scrollbar';
+import SearchNotFound from '../components/SearchNotFound';
+import { UserListHead, UserListToolbar, UserMoreMenu } from '../components/_dashboard/user';
+//
+import USERLIST from '../_mocks_/user';
+
+// ----------------------------------------------------------------------
+
+const TABLE_HEAD = [
+  { id: 'name', label: 'Name', alignRight: false },
+  { id: 'email', label: 'Email', alignRight: false },
+  { id: 'age', label: 'Age', alignRight: false },
+  { id: 'country', label: 'Country', alignRight: false },
+  { id: 'gender', label: 'Gender', alignRight: false },
+  { id: '' }
+];
+// ----------------------------------------------------------------------
+
+function descendingComparator(a, b, orderBy) {
+  if (b[orderBy] < a[orderBy]) {
+    return -1;
+  }
+  if (b[orderBy] > a[orderBy]) {
+    return 1;
+  }
+  return 0;
+}
+
+function getComparator(order, orderBy) {
+  return order === 'desc'
+    ? (a, b) => descendingComparator(a, b, orderBy)
+    : (a, b) => -descendingComparator(a, b, orderBy);
+}
+
+function applySortFilter(array, comparator, query) {
+  const stabilizedThis = array.map((el, index) => [el, index]);
+  stabilizedThis.sort((a, b) => {
+    const order = comparator(a[0], b[0]);
+    if (order !== 0) return order;
+    return a[1] - b[1];
+  });
+  if (query) {
+    return filter(array, (_user) => _user.name.toLowerCase().indexOf(query.toLowerCase()) !== -1);
+  }
+  return stabilizedThis.map((el) => el[0]);
+}
+
+export default function Guardian() {
+  const [page, setPage] = useState(0);
+  const [order, setOrder] = useState('asc');
+  const [selected, setSelected] = useState([]);
+  const [orderBy, setOrderBy] = useState('name');
+  const [filterName, setFilterName] = useState('');
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const auth = useSelector(state=> state.auth)
+  const token = useSelector(state=> state.token)
+  const guardians = useSelector(state=> state.guardians)
+  const dispatch = useDispatch()
+ 
+  const {isLogged} = auth
+
+ useEffect(()=> {
+  if(isLogged)
+      fetchGuardians(token).then(res=> {
+        dispatch(dispatchGetGuardians(res))
+        console.log(res.data)
+      })
+}, [token, isLogged, dispatch])
+
+  const handleRequestSort = (event, property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  const handleSelectAllClick = (event) => {
+    if (event.target.checked) {
+      const newSelecteds = USERLIST.map((n) => n.name);
+      setSelected(newSelecteds);
+      return;
+    }
+    setSelected([]);
+  };
+
+  const handleClick = (event, name) => {
+    const selectedIndex = selected.indexOf(name);
+    let newSelected = [];
+    if (selectedIndex === -1) {
+      newSelected = newSelected.concat(selected, name);
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selected.slice(1));
+    } else if (selectedIndex === selected.length - 1) {
+      newSelected = newSelected.concat(selected.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(
+        selected.slice(0, selectedIndex),
+        selected.slice(selectedIndex + 1)
+      );
+    }
+    setSelected(newSelected);
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleFilterByName = (event) => {
+    setFilterName(event.target.value);
+  };
+
+
+
+
+
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - USERLIST.length) : 0;
+
+  const filteredUsers = applySortFilter(USERLIST, getComparator(order, orderBy), filterName);
+
+  const isUserNotFound = filteredUsers.length === 0;
+
+  return (
+    <Page title="User | Minimal-UI">
+
+      <Container>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
+          <Typography variant="h4" gutterBottom>
+            Guardians
+          </Typography>
+          <Button
+            variant="contained"
+            component={RouterLink}
+            to="#"
+            startIcon={<Icon icon={plusFill} />}
+          >
+            New User
+          </Button>
+        </Stack>
+
+        <Card>
+          <UserListToolbar
+            numSelected={selected.length}
+            filterName={filterName}
+            onFilterName={handleFilterByName}
+          />
+
+          <Scrollbar>
+            <TableContainer sx={{ minWidth: 800 }}>
+              <Table>
+                <UserListHead
+                  order={order}
+                  orderBy={orderBy}
+                  headLabel={TABLE_HEAD}
+                  //rowCount={USERLIST.length}
+                  numSelected={selected.length}
+                  onRequestSort={handleRequestSort}
+                  onSelectAllClick={handleSelectAllClick}
+                />
+                
+                <TableBody>
+                  {guardians.map((user) => {
+                      
+                      const isItemSelected = selected.indexOf(user.name) !== -1;
+                      
+                      return (
+                     
+                        <TableRow
+                          hover
+                          key={user._id}
+                          tabIndex={-1}
+                          role="checkbox"
+                          selected={isItemSelected}
+                          aria-checked={isItemSelected}
+                        >                     
+                      
+                          <TableCell padding="checkbox">
+                            <Checkbox
+                              checked={isItemSelected}
+                              onChange={(event) => handleClick(event, user.name)}
+                            />
+                          </TableCell>
+                          <TableCell component="th" scope="row" padding="none">
+                            <Stack direction="row" alignItems="center" spacing={2}>
+                               <Avatar alt={user.name} src={user.profilepic} /> 
+                              <Typography variant="subtitle2" noWrap>
+                                {user.name}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
+                          <TableCell align="left">{user.email}</TableCell>
+                          <TableCell align="left">{user.age}</TableCell>
+                          <TableCell align="left">{user.country}</TableCell>
+                          <TableCell align="left">
+                            <Label
+                              variant="ghost"
+                              color={(user.gender === 'Male'? 'error':'success')}
+                            >
+                               {sentenceCase(user.gender)} 
+                            </Label>
+                          </TableCell>
+                          <TableCell align="right">
+                            <UserMoreMenu id={user._id} userole={1}/>
+                          </TableCell>
+    
+                        </TableRow>
+                      
+                      );
+
+                    
+
+                    })}
+                  {emptyRows > 0 && (
+                    <TableRow style={{ height: 53 * emptyRows }}>
+                      <TableCell colSpan={6} />
+                    </TableRow>
+                  )}
+                </TableBody>
+                {isUserNotFound && (
+                  <TableBody>
+                    <TableRow>
+                      <TableCell align="center" colSpan={6} sx={{ py: 3 }}>
+                        <SearchNotFound searchQuery={filterName} />
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                )}
+              </Table>
+            </TableContainer>
+          </Scrollbar>
+
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={-1}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </Card>
+      </Container>
+    </Page>
+  );
+}
